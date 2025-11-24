@@ -31,12 +31,104 @@ def RegisterMemberToClass(member_id, class_id):
         print("Database Error: ", e)
         connection.rollback()
 
-def add_member(first_name, last_name, email, join_date):
+def add_member(first_name, last_name, email, date_of_birth, gender, phone, fitness_goal, created_at):
     SQLquery ="""
-    INSERT INTO Member (first_name, last_name, email, join_date)
-    VALUES (%s, %s, %s, %s);""" # Define the SQL query
+    INSERT INTO Member (first_name, last_name, email, date_of_birth, gender, phone, fitness_goal, created_at)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);""" # Define the SQL query
     try:
-        cursor.execute(SQLquery, (first_name, last_name, email, join_date)) # Execute the query
+        cursor.execute(SQLquery, (first_name, last_name, email, date_of_birth, gender, phone, fitness_goal, created_at)) # Execute the query
+        connection.commit()
+    except psycopg2.IntegrityError as e: # Catch unique constraint violation
+        print("Unique constraint violation: ", e)
+        connection.rollback()
+    except psycopg2.Error as e: # Catch database errors
+        print("Database Error: ", e)
+        connection.rollback()
+
+def update_member_info(member_id, phone, fitness_goal):
+    SQLquery = """
+    UPDATE Member
+    SET phone = %s,
+        fitness_goal = %s
+    WHERE member_id = %s;
+    """ # Define the SQL query
+    try:
+        cursor.execute(SQLquery, (phone, fitness_goal, member_id)) # Execute the query
+        connection.commit()
+    except psycopg2.Error as e: # Catch database errors
+        print("Database Error: ", e)
+        connection.rollback()
+
+def input_new_health_metric(member_id, recorded_at, weight_kg, body_fat_pct, resting_heart_rate, systolic_bp, diastolic_bp):
+    SQLquery ="""
+    INSERT INTO HealthMetric (member_id, recorded_at, weight_kg, body_fat_pct, resting_heart_rate, systolic_bp, diastolic_bp)
+    VALUES (%s, %s, %s, %s, %s, %s, %s);""" # Define the SQL query
+    try:
+        cursor.execute(SQLquery, (member_id, recorded_at, weight_kg, body_fat_pct, resting_heart_rate, systolic_bp, diastolic_bp)) # Execute the query
+        connection.commit()
+    except psycopg2.Error as e: # Catch database errors
+        print("Database Error: ", e)
+        connection.rollback()
+
+def schedule_personal_training_session(member_id, trainer_id, start_time, end_time):
+    # 1. CHECK: Is the requested session inside the trainer's availability?
+    availability_query = """
+        SELECT 1
+        FROM TrainerAvailability
+        WHERE trainer_id = %s
+          AND %s >= start_time
+          AND %s <= end_time;
+    """
+
+    cursor.execute(availability_query, (trainer_id, start_time, end_time))
+    is_available = cursor.fetchone()
+
+    if not is_available:
+        print("Error: Trainer is not available during this time window.")
+        return False
+
+
+    # 2. CHECK: Prevent overlapping PT sessions
+    pt_overlap_query = """
+        SELECT 1
+        FROM PersonalTrainingSession
+        WHERE trainer_id = %s
+        AND (
+              %s < end_time   
+          AND %s > start_time 
+        );
+    """
+
+    cursor.execute(pt_overlap_query, (trainer_id, start_time, end_time))
+    pt_conflict = cursor.fetchone()
+
+    if pt_conflict:
+        print("Error: Trainer already has a PT session during this time.")
+        return False
+
+
+    
+    class_overlap_query = """
+        SELECT 1
+        FROM Class
+        WHERE trainer_id = %s
+        AND (
+              %s < end_time
+          AND %s > start_time
+        );
+    """
+
+    cursor.execute(class_overlap_query, (trainer_id, start_time, end_time))
+    class_conflict = cursor.fetchone()
+
+    if class_conflict:
+        print("Error: Trainer is teaching a class during this time.")
+        return False
+    SQLquery ="""
+    INSERT INTO PersonalTrainingSession (member_id, trainer_id, start_time, end_time, status)
+    VALUES (%s, %s, %s, %s, 'scheduled');""" # Define the SQL query
+    try:
+        cursor.execute(SQLquery, (member_id, trainer_id, start_time, end_time)) # Execute the query
         connection.commit()
     except psycopg2.Error as e: # Catch database errors
         print("Database Error: ", e)
@@ -97,4 +189,6 @@ def get_classes_by_trainer(trainer_id):
         """, (trainer_id,))
         return cursor.fetchall()
 
-fetchMemberDashboard(1)
+input_new_health_metric(4, '2025-10-15 10:00', 80.0, 20.0, 70, 120, 80)
+RegisterMemberToClass(4, 1)
+fetchMemberDashboard(4)
