@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2 import IntegrityError, Error
 
 connection = psycopg2.connect(
     dbname="Final Project",
@@ -27,7 +28,7 @@ def RegisterMemberToClass(member_id, class_id):
     try:
         cursor.execute(SQLquery, (class_id, member_id)) # Execute the query
         connection.commit()
-    except psycopg2.Error as e: # Catch database errors
+    except Error as e: # Catch database errors
         print("Database Error: ", e)
         connection.rollback()
 
@@ -38,10 +39,10 @@ def add_member(first_name, last_name, email, date_of_birth, gender, phone, fitne
     try:
         cursor.execute(SQLquery, (first_name, last_name, email, date_of_birth, gender, phone, fitness_goal, created_at)) # Execute the query
         connection.commit()
-    except psycopg2.IntegrityError as e: # Catch unique constraint violation
+    except IntegrityError as e: # Catch unique constraint violation
         print("Unique constraint violation: ", e)
         connection.rollback()
-    except psycopg2.Error as e: # Catch database errors
+    except Error as e: # Catch database errors
         print("Database Error: ", e)
         connection.rollback()
 
@@ -130,7 +131,7 @@ def schedule_personal_training_session(member_id, trainer_id, start_time, end_ti
     try:
         cursor.execute(SQLquery, (member_id, trainer_id, start_time, end_time)) # Execute the query
         connection.commit()
-    except psycopg2.Error as e: # Catch database errors
+    except Error as e: # Catch database errors
         print("Database Error: ", e)
         connection.rollback()
 
@@ -166,29 +167,9 @@ def set_trainer_availability(trainer_id, admin_id, start_time, end_time):
         print("Availability added successfully.")
         return True
 
-    except psycopg2.Error as e:
+    except Error as e:
         print("Database Error: ", e)
         connection.rollback()
         return False
 
 
-def get_personal_training_sessions(trainer_id):
-        cursor.execute("""
-            SELECT session_id, member_id, start_time, end_time, status
-            FROM PersonalTrainingSession
-            WHERE trainer_id = %s
-            ORDER BY start_time;
-        """, (trainer_id,))
-        return cursor.fetchall()
-
-def get_classes_by_trainer(trainer_id):
-        cursor.execute("""
-            SELECT class_id, class_name, start_time, end_time, capacity
-            FROM Class
-            WHERE trainer_id = %s           
-        """, (trainer_id,))
-        return cursor.fetchall()
-
-input_new_health_metric(4, '2025-10-15 10:00', 80.0, 20.0, 70, 120, 80)
-RegisterMemberToClass(4, 1)
-fetchMemberDashboard(4)
