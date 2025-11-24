@@ -1,14 +1,9 @@
--- ============================
--- INSERT ADMINS
--- ============================
+
 INSERT INTO Admin (first_name, last_name, email, phone) VALUES
 ('Alice', 'Nguyen', 'alice.admin@fitclub.com', '555-1010'),
 ('Brian', 'Lopez', 'brian.admin@fitclub.com', '555-2020');
 
 
--- ============================
--- INSERT MEMBERS
--- ============================
 INSERT INTO Member (first_name, last_name, email, date_of_birth, gender, phone, fitness_goal)
 VALUES
 ('Sarah', 'Ali', 'sarah.member@fitclub.com', '1998-03-15', 'F', '555-3001', 'Lose 5kg and improve cardio'),
@@ -16,9 +11,6 @@ VALUES
 ('Lena', 'Patel', 'lena.member@fitclub.com', '2000-11-05', 'F', '555-3003', 'Improve flexibility');
 
 
--- ============================
--- INSERT TRAINERS
--- ============================
 INSERT INTO Trainer (first_name, last_name, specialty, hourly_rate)
 VALUES
 ('Michael', 'Reed', 'Strength Training', 60.00),
@@ -26,9 +18,6 @@ VALUES
 ('David', 'Khan', 'HIIT/Cardio', 50.00);
 
 
--- ============================
--- INSERT ROOMS
--- ============================
 INSERT INTO Room (room_name, room_type, capacity, location)
 VALUES
 ('Studio A', 'Yoga Studio', 20, '1st Floor'),
@@ -36,9 +25,7 @@ VALUES
 ('Weight Room', 'Strength Training', 25, 'Basement');
 
 
--- ============================
--- INSERT HEALTH METRICS
--- ============================
+
 INSERT INTO HealthMetric (member_id, recorded_at, weight_kg, body_fat_pct, resting_heart_rate, systolic_bp, diastolic_bp)
 VALUES
 (1, '2025-10-01 09:00', 70.5, 24.0, 72, 118, 76),
@@ -46,9 +33,7 @@ VALUES
 (3, '2025-10-12 08:30', 60.0, 22.0, 75, 115, 73);
 
 
--- ============================
--- INSERT TRAINER AVAILABILITY
--- ============================
+
 INSERT INTO TrainerAvailability (trainer_id, admin_id, start_time, end_time, is_booked)
 VALUES
 (1, 1, '2025-10-20 09:00', '2025-10-20 11:00', FALSE),
@@ -57,9 +42,7 @@ VALUES
 (3, 2, '2025-10-22 18:00', '2025-10-22 20:00', FALSE);
 
 
--- ============================
--- INSERT CLASSES
--- ============================
+
 INSERT INTO Class (trainer_id, admin_id, room_id, class_name, description, start_time, end_time, capacity)
 VALUES
 (2, 1, 1, 'Morning Yoga', 'Relaxing yoga for beginners', '2025-10-25 09:00', '2025-10-25 10:00', 15),
@@ -67,9 +50,6 @@ VALUES
 (1, 2, 3, 'Strength Basics', 'Intro to weight training',   '2025-10-26 17:00', '2025-10-26 18:00', 12);
 
 
--- ============================
--- INSERT PERSONAL TRAINING SESSIONS
--- ============================
 INSERT INTO PersonalTrainingSession (member_id, trainer_id, start_time, end_time, status)
 VALUES
 (1, 1, '2025-10-21 14:00', '2025-10-21 15:00', 'completed'),
@@ -77,15 +57,11 @@ VALUES
 (3, 3, '2025-10-22 18:00', '2025-10-22 19:00', 'scheduled');
 
 
--- ============================
--- INSERT CLASS REGISTRATIONS
--- (Trigger will stop overbooking)
--- ============================
 INSERT INTO ClassRegistration (class_id, member_id) VALUES
 (1, 1),  -- Sarah → Morning Yoga
 (1, 3),  -- Lena → Morning Yoga
 (2, 2),  -- James → Evening HIIT
 (3, 1);  -- Sarah → Strength Basics
 
-SELECT * FROM member_dashboard WHERE member_id = 1;
+
 
