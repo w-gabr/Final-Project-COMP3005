@@ -32,7 +32,7 @@ def RegisterMemberToClass(member_id, class_id):
         print("Database Error: ", e)
         connection.rollback()
 
-def add_member(first_name, last_name, email, date_of_birth, gender, phone, fitness_goal, created_at):
+def add_user(first_name, last_name, email, date_of_birth, gender, phone, fitness_goal, created_at):
     SQLquery ="""
     INSERT INTO Member (first_name, last_name, email, date_of_birth, gender, phone, fitness_goal, created_at)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s);""" # Define the SQL query
