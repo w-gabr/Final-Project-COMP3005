@@ -14,7 +14,8 @@ CREATE TABLE Admin (
     first_name    VARCHAR(50) NOT NULL,
     last_name     VARCHAR(50) NOT NULL,
     email         VARCHAR(100) UNIQUE NOT NULL,
-    phone         VARCHAR(20)
+    phone         VARCHAR(20),
+    password      VARCHAR(100) NOT NULL DEFAULT 'admin123'
 );
 
 
@@ -27,7 +28,8 @@ CREATE TABLE Member (
     gender        VARCHAR(10),
     phone         VARCHAR(20),
     fitness_goal  TEXT,
-    created_at    TIMESTAMP DEFAULT NOW()
+    created_at    TIMESTAMP DEFAULT NOW(),
+    password      VARCHAR(100) NOT NULL DEFAULT 'member123'
 );
 
 
@@ -35,8 +37,10 @@ CREATE TABLE Trainer (
     trainer_id    SERIAL PRIMARY KEY,
     first_name    VARCHAR(50) NOT NULL,
     last_name     VARCHAR(50) NOT NULL,
+    email         VARCHAR(100) UNIQUE NOT NULL,
     specialty     VARCHAR(100),
-    hourly_rate   NUMERIC(8,2)
+    hourly_rate   NUMERIC(8,2),
+    password      VARCHAR(100) NOT NULL DEFAULT 'trainer123'
 );
 
 
