@@ -171,5 +171,65 @@ def set_trainer_availability(trainer_id, admin_id, start_time, end_time):
         print("Database Error: ", e)
         connection.rollback()
         return False
+    
+def login_user(conn, email, password, table):
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT {table.lower()}_id, password FROM {table} WHERE email = %s;",
+            (email,)
+        )
+        row = cur.fetchone()
+
+        if row is None:
+            print("No account with that email.")
+            return None
+
+        user_id, stored_password = row
+
+        if stored_password == password:
+            print("Login successful!")
+            return user_id
+
+        print("Incorrect password.")
+        return None
+
+def login_menu(conn):
+    print("FITNESS CENTER APP")
+    print("-------------------")
+    print("1. Member Login")
+    print("2. Trainer Login")
+    print("3. Admin Login")
+
+    choice = input("Choose: ")
+
+    email = input("Email: ")
+    password = input("Password: ")
+
+    if choice == "1":
+        return ("member", login_user(conn, email, password, "Member"))
+    
+    elif choice == "2":
+        return ("trainer", login_user(conn, email, password, "Trainer"))
+    elif choice == "3":
+        return ("admin", login_user(conn, email, password, "Admin"))
+    else:
+        print("Invalid option.")
+        return (None, None)
+
+    
+    
 
 
+if __name__ == "__main__":
+    role, user_id = login_menu(connection)
+    if user_id:
+        print(f"Logged in as {role} with ID {user_id}")
+        fetchMemberDashboard(user_id)
+    else:
+        print("Login failed.")
+    
+
+
+
+
+    
