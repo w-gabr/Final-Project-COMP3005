@@ -196,21 +196,42 @@ def login_user(conn, email, password, table):
 def login_menu(conn):
     print("FITNESS CENTER APP")
     print("-------------------")
-    print("1. Member Login")
+    print("1. Member Login/User Registration")
     print("2. Trainer Login")
     print("3. Admin Login")
 
     choice = input("Choose: ")
 
-    email = input("Email: ")
-    password = input("Password: ")
-
     if choice == "1":
-        return ("member", login_user(conn, email, password, "Member"))
+        print("1. Login")
+        print("2. Register")
+        sub_choice = input("Choose: ")
+        while True:
+            if sub_choice == "1":
+                email = input("Email: ")
+                password = input("Password: ")
+                return ("member", login_user(conn, email, password, "Member"))
+            elif sub_choice == "2":
+                add_user(
+                    first_name=input("First Name: "),
+                    last_name=input("Last Name: "),
+                    email=input("Email: "),
+                    date_of_birth=input("Date of Birth (YYYY-MM-DD): "),
+                    gender=input("Gender: "),
+                    phone=input("Phone: "),
+                    fitness_goal=input("Fitness Goal: "),
+                    created_at="NOW()"
+                )
+                print("Registration successful! Please log in.")
+                sub_choice = "1"  
     
     elif choice == "2":
+        email = input("Email: ")
+        password = input("Password: ")
         return ("trainer", login_user(conn, email, password, "Trainer"))
     elif choice == "3":
+        email = input("Email: ")
+        password = input("Password: ")
         return ("admin", login_user(conn, email, password, "Admin"))
     else:
         print("Invalid option.")
