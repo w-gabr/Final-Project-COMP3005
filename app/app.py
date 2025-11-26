@@ -168,6 +168,17 @@ def get_classes():
     results = cursor.fetchall() # Fetch all results
     for row in results:
         print(row)
+
+def get_trainer_avaiability():
+    SQLquery = """
+    SELECT T.trainer_id, T.first_name, T.last_name, T.specialty, TA.start_time, TA.end_time
+    FROM TrainerAvailability as TA JOIN Trainer T ON TA.trainer_id = T.trainer_id
+    WHERE TA.is_booked = FALSE;
+    """ # Define the SQL query
+    cursor.execute(SQLquery) # Execute the query
+    results = cursor.fetchall() # Fetch all results
+    for row in results:
+        print(row)
     
 def login_user(conn, email, password, table):
     with conn.cursor() as cur:
@@ -277,15 +288,19 @@ if __name__ == "__main__":
                         diastolic_bp=int(input("Diastolic BP (mmHg): "))
                     )
             elif member_choice == "2":
+                print("class ID | class Name | total registered | capacity")
                 get_classes()
                 class_id = int(input("Enter Class ID to register: "))
                 register_member_to_class(user_id, class_id)
             elif member_choice == "3":
+                print("ID | first name | last name | specialty | start time | end time")
+                get_trainer_avaiability()
                 trainer_id = int(input("Trainer ID: "))
                 start_time = input("Start Time (YYYY-MM-DD HH:MM:SS): ")
                 end_time = input("End Time (YYYY-MM-DD HH:MM:SS): ")
                 schedule_personal_training_session(user_id, trainer_id, start_time, end_time)
             elif member_choice == "4":
+                print("name | upcoming PT sessions | total classes attended | avg health metrics")
                 fetch_member_dashboard(user_id)
             print("1. Profile Management")
             print("2. Class Registration")
