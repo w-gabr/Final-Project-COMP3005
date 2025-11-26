@@ -1,3 +1,4 @@
+from pyclbr import Class
 import psycopg2
 from psycopg2 import IntegrityError, Error
 
@@ -83,7 +84,7 @@ def input_new_health_metric(member_id, recorded_at, weight_kg, body_fat_pct, res
         print("Database Error: ", e)
         connection.rollback()
 
-def schedule_personal_training_session(member_id, trainer_id, room_id, start_time, end_time):
+def schedule_personal_training_session(member_id, trainer_id, start_time, end_time):
     try:
             # 1. Validate trainer availability window
             cursor.execute("""
@@ -129,10 +130,10 @@ def schedule_personal_training_session(member_id, trainer_id, room_id, start_tim
 
             # 4. Insert PT session
             cursor.execute("""
-                INSERT INTO PersonalTrainingSession (member_id, trainer_id, room_id, start_time, end_time, status)
-                VALUES (%s, %s, %s, %s, %s, 'scheduled')
+                INSERT INTO PersonalTrainingSession (member_id, trainer_id, start_time, end_time, status)
+                VALUES (%s, %s, %s, %s, 'scheduled')
                 RETURNING session_id;
-            """, (member_id, trainer_id, room_id, start_time, end_time))
+            """, (member_id, trainer_id, start_time, end_time))
 
             new_session_id = cursor.fetchone()[0]
 
@@ -153,7 +154,16 @@ def schedule_personal_training_session(member_id, trainer_id, room_id, start_tim
         return False
 
 def get_classes():
-    SQLquery = "SELECT * FROM Class ORDER BY class_id;" # Define the SQL query
+    SQLquery = """SELECT 
+    Class.class_id, 
+    Class.class_name, 
+    COUNT(ClassRegistration.member_id) AS total_registered,
+    Class.capacity
+    FROM ClassRegistration
+    JOIN Class ON ClassRegistration.class_id = Class.class_id
+    GROUP BY Class.class_id, Class.class_name
+    ORDER BY Class.class_id;"""
+ # Define the SQL query
     cursor.execute(SQLquery) # Execute the query
     results = cursor.fetchall() # Fetch all results
     for row in results:
@@ -268,6 +278,11 @@ if __name__ == "__main__":
                 get_classes()
                 class_id = int(input("Enter Class ID to register: "))
                 register_member_to_class(user_id, class_id)
+            elif member_choice == "3":
+                trainer_id = int(input("Trainer ID: "))
+                start_time = input("Start Time (YYYY-MM-DD HH:MM:SS): ")
+                end_time = input("End Time (YYYY-MM-DD HH:MM:SS): ")
+                schedule_personal_training_session(user_id, trainer_id, start_time, end_time)
             elif member_choice == "4":
                 fetch_member_dashboard(user_id)
             print("1. Profile Management")

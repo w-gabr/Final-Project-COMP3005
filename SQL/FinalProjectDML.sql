@@ -42,7 +42,7 @@ VALUES
 INSERT INTO ClassRegistration (class_id, member_id)
 VALUES
 (1, 1), 
-(1, 2),
+(3, 2),
 (2, 3),
 (3, 1);
 
