@@ -11,7 +11,7 @@ connection = psycopg2.connect(
 
 cursor = connection.cursor()
 
-def fetchMemberDashboard(member_id):
+def fetch_member_dashboard(member_id):
     SQLquery = """
     SELECT * FROM member_dashboard WHERE member_id = %s;
     """ # Define the SQL query
@@ -20,7 +20,7 @@ def fetchMemberDashboard(member_id):
     for row in results:
         print(row)
 
-def RegisterMemberToClass(member_id, class_id):
+def register_member_to_class(member_id, class_id):
     SQLquery = """
     INSERT INTO ClassRegistration (class_id, member_id)
     VALUES (%s, %s);
@@ -46,15 +46,27 @@ def add_user(first_name, last_name, email, date_of_birth, gender, phone, fitness
         print("Database Error: ", e)
         connection.rollback()
 
-def update_member_info(member_id, phone, fitness_goal):
-    SQLquery = """
+def update_personal_details(member_id, trait, updated_value):
+    SQLquery = f"""
     UPDATE Member
-    SET phone = %s,
-        fitness_goal = %s
+    SET {trait} = %s
     WHERE member_id = %s;
     """ # Define the SQL query
     try:
-        cursor.execute(SQLquery, (phone, fitness_goal, member_id)) # Execute the query
+        cursor.execute(SQLquery, (updated_value, member_id)) # Execute the query
+        connection.commit()
+    except psycopg2.Error as e: # Catch database errors
+        print("Database Error: ", e)
+        connection.rollback()
+
+def uppdate_fitness_goal(member_id, fitness_goal):
+    SQLquery = """
+    UPDATE Member
+    SET fitness_goal = %s
+    WHERE member_id = %s;
+    """ # Define the SQL query
+    try:
+        cursor.execute(SQLquery, (fitness_goal, member_id)) # Execute the query
         connection.commit()
     except psycopg2.Error as e: # Catch database errors
         print("Database Error: ", e)
@@ -71,106 +83,81 @@ def input_new_health_metric(member_id, recorded_at, weight_kg, body_fat_pct, res
         print("Database Error: ", e)
         connection.rollback()
 
-def schedule_personal_training_session(member_id, trainer_id, start_time, end_time):
-    # 1. CHECK: Is the requested session inside the trainer's availability?
-    availability_query = """
-        SELECT 1
-        FROM TrainerAvailability
-        WHERE trainer_id = %s
-          AND %s >= start_time
-          AND %s <= end_time;
-    """
-
-    cursor.execute(availability_query, (trainer_id, start_time, end_time))
-    is_available = cursor.fetchone()
-
-    if not is_available:
-        print("Error: Trainer is not available during this time window.")
-        return False
-
-
-    # 2. CHECK: Prevent overlapping PT sessions
-    pt_overlap_query = """
-        SELECT 1
-        FROM PersonalTrainingSession
-        WHERE trainer_id = %s
-        AND (
-              %s < end_time   
-          AND %s > start_time 
-        );
-    """
-
-    cursor.execute(pt_overlap_query, (trainer_id, start_time, end_time))
-    pt_conflict = cursor.fetchone()
-
-    if pt_conflict:
-        print("Error: Trainer already has a PT session during this time.")
-        return False
-
-
-    
-    class_overlap_query = """
-        SELECT 1
-        FROM Class
-        WHERE trainer_id = %s
-        AND (
-              %s < end_time
-          AND %s > start_time
-        );
-    """
-
-    cursor.execute(class_overlap_query, (trainer_id, start_time, end_time))
-    class_conflict = cursor.fetchone()
-
-    if class_conflict:
-        print("Error: Trainer is teaching a class during this time.")
-        return False
-    SQLquery ="""
-    INSERT INTO PersonalTrainingSession (member_id, trainer_id, start_time, end_time, status)
-    VALUES (%s, %s, %s, %s, 'scheduled');""" # Define the SQL query
+def schedule_personal_training_session(member_id, trainer_id, room_id, start_time, end_time):
     try:
-        cursor.execute(SQLquery, (member_id, trainer_id, start_time, end_time)) # Execute the query
-        connection.commit()
-    except Error as e: # Catch database errors
-        print("Database Error: ", e)
+            # 1. Validate trainer availability window
+            cursor.execute("""
+                SELECT availability_id
+                FROM TrainerAvailability
+                WHERE trainer_id = %s
+                  AND %s >= start_time
+                  AND %s <= end_time
+                  AND is_booked = FALSE
+                LIMIT 1;
+            """, (trainer_id, start_time, end_time))
+
+            availability = cursor.fetchone()
+            if availability is None:
+                print("Trainer is not available at this time.")
+                return False
+
+            availability_id = availability[0]
+
+            # 2. Check trainer PT session conflicts
+            cursor.execute("""
+                SELECT 1
+                FROM PersonalTrainingSession
+                WHERE trainer_id = %s
+                  AND (%s < end_time AND %s > start_time);
+            """, (trainer_id, end_time, start_time))
+
+            if cursor.fetchone():
+                print("Trainer already has a PT session during this time.")
+                return False
+            
+            # 3. Check class conflicts for trainer
+            cursor.execute("""
+                SELECT 1
+                FROM Class
+                WHERE trainer_id = %s
+                  AND (%s < end_time AND %s > start_time);
+            """, (trainer_id, end_time, start_time))
+
+            if cursor.fetchone():
+                print("Trainer already has a class during this time.")
+                return False
+
+            # 4. Insert PT session
+            cursor.execute("""
+                INSERT INTO PersonalTrainingSession (member_id, trainer_id, room_id, start_time, end_time, status)
+                VALUES (%s, %s, %s, %s, %s, 'scheduled')
+                RETURNING session_id;
+            """, (member_id, trainer_id, room_id, start_time, end_time))
+
+            new_session_id = cursor.fetchone()[0]
+
+            # 5. Mark availability as booked
+            cursor.execute("""
+                UPDATE TrainerAvailability
+                SET is_booked = TRUE
+                WHERE availability_id = %s;
+            """, (availability_id,))
+
+            connection.commit()
+            print("PT session booked successfully! Session ID:", new_session_id)
+            return True
+
+    except Exception as e:
         connection.rollback()
-
-def set_trainer_availability(trainer_id, admin_id, start_time, end_time):
-    # 1. First: check for overlap
-    overlap_query = """
-        SELECT 1
-        FROM TrainerAvailability
-        WHERE trainer_id = %s
-        AND (
-            %s < end_time   -- new_start < existing_end
-            AND
-            %s > start_time -- new_end   > existing_start
-        );
-    """
-
-    try:
-        cursor.execute(overlap_query, (trainer_id, start_time, end_time))
-        overlap = cursor.fetchone()
-
-        if overlap:
-            print("Error: This availability window overlaps an existing one.")
-            return False
-
-        # 2. Insert availability if no overlap
-        SQLquery = """
-            INSERT INTO TrainerAvailability (trainer_id, admin_id, start_time, end_time, is_booked)
-            VALUES (%s, %s, %s, %s, FALSE);
-        """
-
-        cursor.execute(SQLquery, (trainer_id, admin_id, start_time, end_time))
-        connection.commit()
-        print("Availability added successfully.")
-        return True
-
-    except Error as e:
-        print("Database Error: ", e)
-        connection.rollback()
+        print("Database Error:", e)
         return False
+
+def get_classes():
+    SQLquery = "SELECT * FROM Class ORDER BY class_id;" # Define the SQL query
+    cursor.execute(SQLquery) # Execute the query
+    results = cursor.fetchall() # Fetch all results
+    for row in results:
+        print(row)
     
 def login_user(conn, email, password, table):
     with conn.cursor() as cur:
@@ -245,9 +232,50 @@ if __name__ == "__main__":
     role, user_id = login_menu(connection)
     if user_id:
         print(f"Logged in as {role} with ID {user_id}")
-        fetchMemberDashboard(user_id)
     else:
         print("Login failed.")
+    if role == "member":
+        print("1. Profile Management")
+        print("2. Class Registration")
+        print("3. Schedule Personal Training Session")
+        print("4. View Dashboard")
+        print("5. Logout")
+        member_choice = input("Choose: ")
+        while member_choice != "5":
+            if member_choice == "1":
+                print("1. Update Personal Details")
+                print("2. Update Fitness Goal")
+                print("3. Input New Health Metric")
+                pm_choice = input("Choose: ")
+                if pm_choice == "2":
+                    goal = input("Enter new fitness goal: ")
+                    uppdate_fitness_goal(user_id, goal)
+                elif pm_choice == "1":
+                    trait = input("Trait to update (first_name, last_name, email, phone): ")
+                    new_value = input(f"Enter new value for {trait}: ")
+                    update_personal_details(user_id, trait, new_value)
+                elif pm_choice == "3":
+                    input_new_health_metric(
+                        member_id=user_id,
+                        recorded_at="NOW()",
+                        weight_kg=float(input("Weight (kg): ")),
+                        body_fat_pct=float(input("Body Fat (%): ")),
+                        resting_heart_rate=int(input("Resting Heart Rate (bpm): ")),
+                        systolic_bp=int(input("Systolic BP (mmHg): ")),
+                        diastolic_bp=int(input("Diastolic BP (mmHg): "))
+                    )
+            elif member_choice == "2":
+                get_classes()
+                class_id = int(input("Enter Class ID to register: "))
+                register_member_to_class(user_id, class_id)
+            elif member_choice == "4":
+                fetch_member_dashboard(user_id)
+            print("1. Profile Management")
+            print("2. Class Registration")
+            print("3. Schedule Personal Training Session")
+            print("4. View Dashboard")
+            print("5. Logout")
+            member_choice = input("Choose: ")   
     
 
 
