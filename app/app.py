@@ -1,4 +1,4 @@
-from pyclbr import Class
+import sys
 import psycopg2
 from psycopg2 import IntegrityError, Error
 
@@ -244,6 +244,8 @@ if __name__ == "__main__":
         print(f"Logged in as {role} with ID {user_id}")
     else:
         print("Login failed.")
+        sys.exit()
+        
     if role == "member":
         print("1. Profile Management")
         print("2. Class Registration")
