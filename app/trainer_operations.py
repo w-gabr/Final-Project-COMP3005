@@ -40,14 +40,14 @@ class TrainerOperations:
     
     def view_schedule(self, trainer_id):
         """View all upcoming PT sessions and classes for the trainer"""
-        print("\n=== YOUR UPCOMING SCHEDULE ===")
+        print("\n=== SCHEDULE ===")
         
         # Get PT sessions
         pt_query = """
         SELECT pts.session_id, m.first_name, m.last_name, pts.start_time, pts.end_time, pts.status
         FROM PersonalTrainingSession pts
         JOIN Member m ON pts.member_id = m.member_id
-        WHERE pts.trainer_id = %s AND pts.start_time >= NOW()
+        WHERE pts.trainer_id = %s
         ORDER BY pts.start_time;
         """
         try:
@@ -66,7 +66,7 @@ class TrainerOperations:
             SELECT c.class_id, c.class_name, c.start_time, c.end_time, r.room_name, c.capacity
             FROM Class c
             LEFT JOIN Room r ON c.room_id = r.room_id
-            WHERE c.trainer_id = %s AND c.start_time >= NOW()
+            WHERE c.trainer_id = %s
             ORDER BY c.start_time;
             """
             self.cursor.execute(class_query, (trainer_id,))

@@ -57,7 +57,7 @@ class Utils:
             ta.availability_id
         FROM TrainerAvailability ta
         JOIN Trainer t ON ta.trainer_id = t.trainer_id
-        WHERE ta.is_booked = FALSE AND ta.start_time >= NOW()
+        WHERE ta.is_booked = FALSE
         ORDER BY ta.start_time;
         """
         try:
