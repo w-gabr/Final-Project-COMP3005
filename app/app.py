@@ -12,6 +12,7 @@ connection = psycopg2.connect(
 
 cursor = connection.cursor()
 
+"""===============FUNCTIONS FOR MEMBER ROLE==============="""
 def fetch_member_dashboard(member_id):
     SQLquery = """
     SELECT * FROM member_dashboard WHERE member_id = %s;
@@ -152,7 +153,54 @@ def schedule_personal_training_session(member_id, trainer_id, start_time, end_ti
         connection.rollback()
         print("Database Error:", e)
         return False
+"""===============FUNCTIONS FOR TRAINER ROLE==============="""
+def set_trainer_availability(trainer_id, start_time, end_time):
+    overlap_query = """
+    SELECT 1
+    FROM TrainerAvailability
+    WHERE trainer_id = %s
+      AND (%s < end_time AND %s > start_time); """ # Define the SQL query to check for overlaps
+    cursor.execute(overlap_query, (trainer_id, end_time, start_time)) # Execute the overlap check query
+    if cursor.fetchone():
+        print("Error: Availability overlaps with existing slots.")
+        return
+    
+    SQLquery ="""
+    INSERT INTO TrainerAvailability (trainer_id, start_time, end_time, is_booked)
+    VALUES (%s, %s, %s, FALSE);""" # Define the SQL query
+    try:
+        cursor.execute(SQLquery, (trainer_id, start_time, end_time)) # Execute the query
+        connection.commit()
+    except psycopg2.Error as e: # Catch database errors
+        print("Database Error: ", e)
+        connection.rollback()
 
+def member_lookup_by_name(name):
+    SQLquery = """SELECT 
+                    m.member_id,
+                    m.first_name,
+                    m.last_name,
+                    m.email,
+                    m.fitness_goal,
+                    h.weight_kg,
+                    h.body_fat_pct,
+                    h.resting_heart_rate,
+                    h.systolic_bp,
+                    h.diastolic_bp,
+                    h.recorded_at
+                FROM Member m
+                LEFT JOIN HealthMetric h ON m.member_id = h.member_id
+                WHERE m.first_name ILIKE %s OR m.last_name ILIKE %s
+                ORDER BY h.recorded_at DESC
+                LIMIT 1;
+            """ # Define the SQL query
+    search_pattern = f"%{name}%"
+    cursor.execute(SQLquery, (search_pattern, search_pattern)) # Execute the query
+    results = cursor.fetchall() # Fetch all results
+    for row in results:
+        print(row)
+
+"""===============ADDITIONAL QUERIES for CLI==============="""
 def get_classes():
     SQLquery = """SELECT 
     Class.class_id, 
@@ -179,7 +227,15 @@ def get_trainer_avaiability():
     results = cursor.fetchall() # Fetch all results
     for row in results:
         print(row)
-    
+
+def get_member_names_for_lookup():
+    SQLquery = """SELECT first_name, last_name FROM Member;""" # Define the SQL query
+    cursor.execute(SQLquery) # Execute the query
+    results = cursor.fetchall() # Fetch all results
+    for row in results:
+        print(row)
+
+"""===============LOGIN MENU FUNCTION==============="""   
 def login_user(conn, email, password, table):
     with conn.cursor() as cur:
         cur.execute(
@@ -308,6 +364,28 @@ if __name__ == "__main__":
             print("4. View Dashboard")
             print("5. Logout")
             member_choice = input("Choose: ")   
+    elif role == "trainer":
+        print("1. Set Availability")
+        print("2. Schedule Viewing")
+        print("3. Member Lookup by Name")
+        print("4. Logout")
+        trainer_choice = input("Choose: ")
+        while trainer_choice != "4":
+            if trainer_choice == "1":
+                start_time = input("Start Time (YYYY-MM-DD HH:MM:SS): ")
+                end_time = input("End Time (YYYY-MM-DD HH:MM:SS): ")
+                set_trainer_availability(user_id, start_time, end_time)
+            elif trainer_choice == "2":
+                print("Trainer schedule viewing not yet implemented.")
+            elif trainer_choice == "3":
+                print("Available member names for lookup:")
+                get_member_names_for_lookup()
+                name = input("Enter member's first or last name to lookup: ")
+                print("member_id | first_name | last_name | email | fitness_goal | weight_kg | body_fat_pct | resting_heart_rate | systolic_bp | diastolic_bp | recorded_at")
+                member_lookup_by_name(name)
+            print("1. Member Lookup by Name")
+            print("2. Logout")
+            trainer_choice = input("Choose: ")
     
 
 
