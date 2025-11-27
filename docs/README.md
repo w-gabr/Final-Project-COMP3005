@@ -30,3 +30,9 @@ Final-Project-COMP3005/
 ├── app/                # Application source code
 ├── docs/               # ER diagrams and documentation
 └── README.md           # Project description
+
+---
+
+## Authors
+- Waleed Gabr: COMP3005 Student
+- Mohammad Saad: COMP3005 Student
