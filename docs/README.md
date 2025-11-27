@@ -1,5 +1,5 @@
 
-# Final Project - COMP3005
+# Final Project - COMP3005 (HEALTH AND FITNESS CLI APPLICATION)
 
 ## Overview
 This repository contains the final project for **COMP3005 - Database Management Systems**. The project demonstrates the design and implementation of a relational database system, including schema creation, data manipulation, and integration with an application layer.
