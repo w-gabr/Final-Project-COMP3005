@@ -386,9 +386,3 @@ if __name__ == "__main__":
             print("1. Member Lookup by Name")
             print("2. Logout")
             trainer_choice = input("Choose: ")
-    
-
-
-
-
-    
