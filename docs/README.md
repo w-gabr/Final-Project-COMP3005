@@ -40,4 +40,4 @@ Final-Project-COMP3005/
 ---
 
 ## Video
-Video Link: 
+Video Link: https://www.youtube.com/watch?v=haYy1vS1lnM
